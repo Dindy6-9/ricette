@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141414">
+<title>Le mie Ricette</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#FBF6EF;--card:#FFFFFF;--ink:#2B2320;--muted:#7A6E66;--accent:#B5532F;--line:#EADFD3;--chip:#F3E7DA;--danger:#B3261E;--r:14px}
+@media (prefers-color-scheme: dark){:root{--bg:#1C1816;--card:#262120;--ink:#F3ECE6;--muted:#B5A89E;--accent:#E07A4F;--line:#3A322E;--chip:#332B27;--danger:#F2867F}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45}
+.hidden{display:none!important}
+button,input,textarea{font:inherit;color:inherit}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 16px;cursor:pointer}
+.btn.primario{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.pericolo{color:var(--danger);border-color:var(--danger);background:transparent}
+.btn.testo{border:none;background:none;padding:8px 4px;color:var(--accent);font-weight:600}
+.btn.grande{display:block;width:100%;padding:14px;font-size:17px;text-align:center;text-decoration:none;margin-top:12px}
+.btn.piccolo{padding:5px 10px;font-size:14px}
+.icona{border:none;background:none;font-size:22px;padding:6px;cursor:pointer}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-box{max-width:360px;text-align:center}
+.logo{font-size:64px}
+.errore{color:var(--danger);font-size:14px;white-space:pre-line}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 16px 6px;border-bottom:1px solid var(--line)}
+.riga-top{display:flex;align-items:center;justify-content:space-between}
+.riga-top h1{font-size:22px;margin:0;color:var(--accent)}
+input,textarea{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:11px 12px;outline:none}
+input:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical}
+#cerca{margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chip{background:var(--chip);border:1px solid transparent;border-radius:999px;padding:4px 11px;font-size:14px;white-space:nowrap}
+button.chip{cursor:pointer}
+.chip.attiva{background:var(--accent);color:#fff}
+.lista{padding:12px 16px 110px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;max-width:760px;margin:0 auto}
+.scheda{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;cursor:pointer}
+.scheda h3{margin:0;font-size:17px}
+.scheda .chips{margin:6px 0 0}
+.scheda-testa{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.fonte{font-size:12px;color:var(--muted);white-space:nowrap}
+.anteprima{margin:6px 0 0;color:var(--muted);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vuoto{text-align:center;color:var(--muted);padding:40px 16px}
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
+.foglio{position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto}
+.foglio-dentro{max-width:760px;margin:0 auto;padding:4px 16px 48px}
+.barra{display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:2;border-bottom:1px solid var(--line)}
+.titolo-dett{font-size:24px;margin:12px 0 4px}
+h4{margin:22px 0 6px;color:var(--accent)}
+.ingr{list-style:none;padding:0;margin:0}
+.ingr li{padding:7px 0;border-bottom:1px solid var(--line)}
+.ingr label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-weight:400;margin:0}
+.ingr input{width:auto;margin-top:4px}
+.ingr input:checked + span{text-decoration:line-through;color:var(--muted)}
+.proc{padding-left:22px;margin:0}
+.proc li{margin-bottom:8px}
+.testo-libero{white-space:pre-wrap;margin:0}
+form label,.campo{display:block;margin:16px 0 0;font-weight:600;font-size:15px}
+form label input,form label textarea{margin-top:6px;font-weight:400}
+.riga{display:flex;gap:8px;align-items:center;margin-top:6px}
+.riga input{flex:1}
+.box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:14px}
+.box h3{margin:0 0 8px}
+.box p{margin:0 0 10px;color:var(--muted)}
+.lista-cat{list-style:none;padding:0;margin:0}
+.lista-cat li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.lista-cat .azioni{display:flex;gap:6px}
+.versione{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
+.avviso{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:50;max-width:90vw;text-align:center;font-size:15px}
+.caricamento{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--muted);z-index:40}
+</style>
+</head>
+<body>
+
+<div id="caricamento" class="caricamento">Caricamento…</div>
+
+<div id="schermo-login" class="login hidden">
+  <div class="login-box">
+    <div class="logo">🍲</div>
+    <h1>Le mie Ricette</h1>
+    <p>Salva le ricette da Instagram, Facebook, YouTube e dai siti, e ritrovale quando vuoi.</p>
+    <button id="btn-login" class="btn primario grande">Accedi con Google</button>
+    <p id="login-errore" class="errore"></p>
+  </div>
+</div>
+
+<div id="schermo-app" class="hidden">
+  <header class="top">
+    <div class="riga-top">
+      <h1>Le mie Ricette</h1>
+      <button class="icona" data-az="impostazioni" aria-label="Impostazioni">⚙️</button>
+    </div>
+    <input id="cerca" type="search" placeholder="Cerca per nome, ingrediente, categoria…" autocomplete="off">
+    <div id="filtri" class="chips scroll"></div>
+  </header>
+  <main id="lista" class="lista"></main>
+  <button class="fab" data-az="nuova" aria-label="Nuova ricetta">+</button>
+</div>
+
+<div id="foglio" class="foglio hidden">
+  <div id="foglio-contenuto" class="foglio-dentro"></div>
+</div>
+
+<div id="avviso" class="avviso hidden"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ===== CONFIGURAZIONE ===== */
+const VERSIONE = "1.0.2";
+const firebaseConfig = {
+  apiKey: "AIzaSyCzkJMenMIFO2ksb5ZZ59Yn9JVALXi3Ujs",
+  authDomain: "ricette-app-25871.firebaseapp.com",
+  projectId: "ricette-app-25871",
+  storageBucket: "ricette-app-25871.firebasestorage.app",
+  messagingSenderId: "169461172901",
+  appId: "1:169461172901:web:87b3be5f05391f394cdb4c"
+};
+const CAT_DEFAULT = ["Antipasti", "Primi", "Secondi", "Contorni", "Dolci", "Pane e lievitati", "Veloci"];
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+
+/* ===== STATO ===== */
+let utente = null;
+let ricette = [];
+let categorie = [...CAT_DEFAULT];
+let filtroCat = null;
+let testoRicerca = "";
+let foglioTipo = null;
+let stopRicette = null;
+let stopImp = null;
+let primoCaricamento = true;
+
+const $ = (id) => document.getElementById(id);
+
+/* ===== UTILITÀ ===== */
+function esc(s) {
+  return (s == null ? "" : String(s)).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function norm(s) {
+  return (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function linkSicuro(u) {
+  const t = (u || "").trim();
+  return /^https?:\/\/\S+$/i.test(t) ? t : "";
+}
+function fonte(url) {
+  const u = (url || "").toLowerCase();
+  if (!u) return "";
+  if (u.includes("instagram.com")) return "Instagram";
+  if (u.includes("facebook.com") || u.includes("fb.watch") || u.includes("fb.com")) return "Facebook";
+  if (u.includes("tiktok.com")) return "TikTok";
+  if (u.includes("youtube.com") || u.includes("youtu.be")) return "YouTube";
+  if (u.includes("pinterest.")) return "Pinterest";
+  return "Sito web";
+}
+function righe(t) {
+  return (t || "").split("\n").map((r) => r.trim()).filter(Boolean);
+}
+function tsISO(t) {
+  try { return t && t.toDate ? t.toDate().toISOString() : null; } catch (e) { return null; }
+}
+let timerAvviso = null;
+function mostraAvviso(msg) {
+  const a = $("avviso");
+  a.textContent = msg;
+  a.classList.remove("hidden");
+  clearTimeout(timerAvviso);
+  timerAvviso = setTimeout(() => a.classList.add("hidden"), 3000);
+}
+function nascondiCaricamento() { $("caricamento").classList.add("hidden"); }
+const rifRicette = () => collection(db, "utenti", utente.uid, "ricette");
+const rifRicetta = (id) => doc(db, "utenti", utente.uid, "ricette", id);
+const rifImp = () => doc(db, "utenti", utente.uid, "impostazioni", "generale");
+
+/* ===== LOGIN ===== */
+function erroreLogin(e) {
+  const codice = (e && e.code) || "";
+  let msg = "Accesso non riuscito (" + (codice || (e && e.message) || "errore sconosciuto") + ").";
+  if (codice === "auth/unauthorized-domain") {
+    msg = "Questo indirizzo non è autorizzato.\nIn Firebase vai su Authentication → Impostazioni → Domini autorizzati e aggiungi: " + location.hostname;
+  } else if (codice.indexOf("api-key") !== -1) {
+    msg = "La chiave Firebase nel file non è corretta. Ricontrolla il blocco firebaseConfig.";
+  } else if (codice === "auth/operation-not-allowed") {
+    msg = "L'accesso con Google non è attivo. In Firebase vai su Authentication → Metodo di accesso → Google e attivalo.";
+  }
+  $("login-errore").textContent = msg;
+}
+$("btn-login").addEventListener("click", async () => {
+  $("login-errore").textContent = "";
+  const prov = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, prov);
+  } catch (e) {
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+      try { await signInWithRedirect(auth, prov); } catch (e2) { erroreLogin(e2); }
+    } else if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+      erroreLogin(e);
+    }
+  }
+});
+getRedirectResult(auth).catch(erroreLogin);
+
+onAuthStateChanged(auth, (u) => {
+  if (u) {
+    utente = u;
+    $("schermo-login").classList.add("hidden");
+    $("schermo-app").classList.remove("hidden");
+    avviaDati();
+    usaCondivisione();
+  } else {
+    utente = null;
+    if (stopRicette) stopRicette();
+    if (stopImp) stopImp();
+    ricette = [];
+    $("schermo-app").classList.add("hidden");
+    $("schermo-login").classList.remove("hidden");
+    nascondiCaricamento();
+  }
+});
+
+/* ===== DATI ===== */
+function avviaDati() {
+  primoCaricamento = true;
+  stopRicette = onSnapshot(query(rifRicette(), orderBy("creato", "desc")), (snap) => {
+    ricette = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderLista();
+    nascondiCaricamento();
+  }, (err) => {
+    nascondiCaricamento();
+    mostraAvviso("Errore nel leggere le ricette: " + err.message);
+  });
+  stopImp = onSnapshot(rifImp(), (s) => {
+    if (s.exists() && Array.isArray(s.data().categorie)) {
+      categorie = s.data().categorie;
+    } else if (primoCaricamento) {
+      categorie = [...CAT_DEFAULT];
+      setDoc(rifImp(), { categorie }, { merge: true }).catch(() => {});
+    }
+    primoCaricamento = false;
+    renderFiltri();
+    if (foglioTipo === "impostazioni") apriImpostazioni();
+  }, () => {});
+}
+function salvaCategorie(nuove) {
+  categorie = nuove;
+  setDoc(rifImp(), { categorie: nuove }, { merge: true }).catch((e) => mostraAvviso("Errore: " + e.message));
+  renderFiltri();
+}
+
+/* ===== LISTA ===== */
+function renderFiltri() {
+  const tutte = '<button class="chip ' + (filtroCat === null ? "attiva" : "") + '" data-az="filtro" data-cat="">Tutte</button>';
+  $("filtri").innerHTML = tutte + categorie.map((c) =>
+    '<button class="chip ' + (filtroCat === c ? "attiva" : "") + '" data-az="filtro" data-cat="' + esc(c) + '">' + esc(c) + "</button>"
+  ).join("");
+}
+function ricetteFiltrate() {
+  const parole = norm(testoRicerca).split(/\s+/).filter(Boolean);
+  return ricette.filter((r) => {
+    if (filtroCat && !(r.categorie || []).includes(filtroCat)) return false;
+    if (!parole.length) return true;
+    const testo = norm([r.nome, (r.categorie || []).join(" "), r.ingredienti, r.procedimento, r.note, fonte(r.link)].join(" "));
+    return parole.every((p) => testo.includes(p));
+  });
+}
+function renderLista() {
+  const elenco = ricetteFiltrate();
+  if (!ricette.length) {
+    $("lista").innerHTML = '<div class="vuoto">Nessuna ricetta ancora.<br>Premi <b>+</b> oppure, da Instagram o Facebook, usa <b>Condividi → Ricette</b>.</div>';
+    return;
+  }
+  if (!elenco.length) {
+    $("lista").innerHTML = '<div class="vuoto">Nessuna ricetta trovata.</div>';
+    return;
+  }
+  $("lista").innerHTML = elenco.map((r) => {
+    const primaRiga = righe(r.ingredienti).slice(0, 4).join(", ");
+    const chips = (r.categorie || []).map((c) => '<span class="chip">' + esc(c) + "</span>").join("");
+    return '<article class="scheda" data-az="apri" data-id="' + esc(r.id) + '">' +
+      '<div class="scheda-testa"><h3>' + esc(r.nome) + "</h3>" + (r.link ? '<span class="fonte">' + esc(fonte(r.link)) + "</span>" : "") + "</div>" +
+      (chips ? '<div class="chips">' + chips + "</div>" : "") +
+      (primaRiga ? '<p class="anteprima">' + esc(primaRiga) + "</p>" : "") +
+      "</article>";
+  }).join("");
+}
+$("cerca").addEventListener("input", (e) => { testoRicerca = e.target.value; renderLista(); });
+
+/* ===== FOGLIO (schermate sopra la lista) ===== */
+function apriFoglio(tipo, html) {
+  const giaAperto = !$("foglio").classList.contains("hidden");
+  foglioTipo = tipo;
+  $("foglio-contenuto").innerHTML = html;
+  $("foglio").classList.remove("hidden");
+  if (!giaAperto) {
+    $("foglio").scrollTop = 0;
+    try { history.pushState({ foglio: true }, ""); } catch (e) {}
+  } else {
+    $("foglio").scrollTop = 0;
+  }
+}
+function nascondiFoglio() {
+  $("foglio").classList.add("hidden");
+  $("foglio-contenuto").innerHTML = "";
+  foglioTipo = null;
+}
+function chiudiFoglio() {
+  if (history.state && history.state.foglio) history.back();
+  else nascondiFoglio();
+}
+window.addEventListener("popstate", () => { if (!$("foglio").classList.contains("hidden")) nascondiFoglio(); });
+
+/* ===== DETTAGLIO ===== */
+function apriDettaglio(id) {
+  const r = ricette.find((x) => x.id === id);
+  if (!r) return;
+  const ingr = righe(r.ingredienti);
+  const proc = righe(r.procedimento);
+  const link = linkSicuro(r.link);
+  const f = fonte(link);
+  const testoBottone = f === "Sito web" ? "▶ Apri la ricetta originale" : "▶ Guarda il video su " + f;
+  let html = '<div class="barra"><button class="btn testo" data-az="chiudi">← Indietro</button>' +
+    '<button class="btn testo" data-az="modifica" data-id="' + esc(r.id) + '">✏️ Modifica</button></div>' +
+    '<h2 class="titolo-dett">' + esc(r.nome) + "</h2>" +
+    '<div class="chips">' + (r.categorie || []).map((c) => '<span class="chip">' + esc(c) + "</span>").join("") + "</div>";
+  if (link) html += '<a class="btn primario grande" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(testoBottone) + "</a>";
+  if (ingr.length) {
+    html += "<h4>Ingredienti</h4><ul class=\"ingr\">" + ingr.map((i) => '<li><label><input type="checkbox"><span>' + esc(i) + "</span></label></li>").join("") + "</ul>";
+  }
+  if (proc.length > 1) {
+    html += "<h4>Procedimento</h4><ol class=\"proc\">" + proc.map((p) => "<li>" + esc(p) + "</li>").join("") + "</ol>";
+  } else if (proc.length === 1) {
+    html += '<h4>Procedimento</h4><p class="testo-libero">' + esc(proc[0]) + "</p>";
+  }
+  if ((r.note || "").trim()) html += '<h4>Note</h4><p class="testo-libero">' + esc(r.note) + "</p>";
+  if (!ingr.length && !proc.length && !(r.note || "").trim()) {
+    html += '<p class="vuoto">Nessun ingrediente o procedimento salvato.<br>Premi ✏️ Modifica per aggiungerli.</p>';
+  }
+  apriFoglio("dettaglio", html);
+}
+
+/* ===== MODULO NUOVA / MODIFICA ===== */
+function apriForm(id, precompila) {
+  const r = id ? (ricette.find((x) => x.id === id) || {}) : (precompila || {});
+  const sel = new Set(r.categorie || []);
+  const html = '<div class="barra"><button class="btn testo" data-az="chiudi">✕ Annulla</button><strong>' + (id ? "Modifica ricetta" : "Nuova ricetta") + "</strong><span style=\"width:60px\"></span></div>" +
+    '<form id="form-ricetta" data-id="' + esc(id || "") + '" novalidate>' +
+    '<label>Link (Instagram, Facebook, YouTube, sito…)<input name="link" type="url" inputmode="url" placeholder="https://…" value="' + esc(r.link || "") + '"></label>' +
+    '<label>Nome della ricetta *<input name="nome" value="' + esc(r.nome || "") + '"></label>' +
+    '<div class="campo">Categorie <small>(puoi sceglierne più di una)</small>' +
+    '<div class="chips" id="scelta-cat">' + categorie.map((c) =>
+      '<button type="button" class="chip sel ' + (sel.has(c) ? "attiva" : "") + '" data-cat="' + esc(c) + '">' + esc(c) + "</button>").join("") + "</div>" +
+    '<div class="riga"><input id="nuova-cat-form" placeholder="Nuova categoria…"><button type="button" class="btn" data-az="agg-cat-form">Aggiungi</button></div></div>' +
+    '<label>Ingredienti <small>(uno per riga)</small><textarea name="ingredienti" rows="7">' + esc(r.ingredienti || "") + "</textarea></label>" +
+    '<label>Procedimento <small>(un passaggio per riga)</small><textarea name="procedimento" rows="8">' + esc(r.procedimento || "") + "</textarea></label>" +
+    '<label>Note<textarea name="note" rows="3">' + esc(r.note || "") + "</textarea></label>" +
+    '<button type="submit" class="btn primario grande">💾 Salva</button>' +
+    (id ? '<button type="button" class="btn pericolo grande" data-az="elimina" data-id="' + esc(id) + '">🗑 Elimina ricetta</button>' : "") +
+    "</form>";
+  apriFoglio("form", html);
+}
+function salvaRicetta(form) {
+  const fd = new FormData(form);
+  const nome = (fd.get("nome") || "").trim();
+  if (!nome) { mostraAvviso("Scrivi il nome della ricetta"); return; }
+  const grezzo = (fd.get("link") || "").trim();
+  const link = grezzo ? linkSicuro(grezzo) : "";
+  if (grezzo && !link) { mostraAvviso("Il link deve iniziare con https://"); return; }
+  const dati = {
+    nome,
+    link,
+    categorie: Array.from(form.querySelectorAll(".chip.sel.attiva")).map((b) => b.dataset.cat),
+    ingredienti: (fd.get("ingredienti") || "").trim(),
+    procedimento: (fd.get("procedimento") || "").trim(),
+    note: (fd.get("note") || "").trim(),
+    aggiornato: serverTimestamp()
+  };
+  const id = form.dataset.id;
+  if (id) {
+    updateDoc(rifRicetta(id), dati).catch((e) => mostraAvviso("Errore nel salvare: " + e.message));
+  } else {
+    dati.creato = serverTimestamp();
+    addDoc(rifRicette(), dati).catch((e) => mostraAvviso("Errore nel salvare: " + e.message));
+  }
+  chiudiFoglio();
+  mostraAvviso("Ricetta salvata ✓");
+}
+document.addEventListener("submit", (e) => {
+  if (e.target && e.target.id === "form-ricetta") { e.preventDefault(); salvaRicetta(e.target); }
+});
+
+/* ===== IMPOSTAZIONI ===== */
+function apriImpostazioni() {
+  const html = '<div class="barra"><button class="btn testo" data-az="chiudi">← Indietro</button><strong>Impostazioni</strong><span style="width:60px"></span></div>' +
+    '<section class="box"><h3>Categorie</h3><ul class="lista-cat">' +
+    categorie.map((c, i) => '<li><span>' + esc(c) + '</span><span class="azioni">' +
+      '<button class="btn piccolo" data-az="rinomina-cat" data-i="' + i + '">Rinomina</button>' +
+      '<button class="btn piccolo pericolo" data-az="elimina-cat" data-i="' + i + '">Elimina</button></span></li>').join("") +
+    '</ul><div class="riga"><input id="nuova-cat-imp" placeholder="Nuova categoria…"><button class="btn" data-az="agg-cat-imp">Aggiungi</button></div></section>' +
+    '<section class="box"><h3>Backup</h3><p>Scarica tutte le ricette in un file, da conservare o da trasferire in un\'altra app.</p>' +
+    '<button class="btn" data-az="esporta">⬇ Esporta tutto</button></section>' +
+    '<section class="box"><h3>Account</h3><p>' + esc((utente && utente.email) || "") + '</p><button class="btn" data-az="esci">Esci</button></section>' +
+    '<p class="versione">Le mie Ricette · versione ' + VERSIONE + "</p>";
+  apriFoglio("impostazioni", html);
+}
+function aggiungiCategoria(nome) {
+  const n = (nome || "").trim();
+  if (!n) return false;
+  if (categorie.some((c) => norm(c) === norm(n))) { mostraAvviso("Questa categoria esiste già"); return false; }
+  salvaCategorie([...categorie, n]);
+  return true;
+}
+function rinominaCategoria(i) {
+  const vecchia = categorie[i];
+  if (vecchia == null) return;
+  const nuova = (prompt('Nuovo nome per "' + vecchia + '"', vecchia) || "").trim();
+  if (!nuova || nuova === vecchia) return;
+  if (categorie.some((c, j) => j !== i && norm(c) === norm(nuova))) { mostraAvviso("Questa categoria esiste già"); return; }
+  const nuovaLista = categorie.map((c) => (c === vecchia ? nuova : c));
+  const batch = writeBatch(db);
+  batch.set(rifImp(), { categorie: nuovaLista }, { merge: true });
+  ricette.filter((r) => (r.categorie || []).includes(vecchia)).forEach((r) => {
+    batch.update(rifRicetta(r.id), { categorie: r.categorie.map((c) => (c === vecchia ? nuova : c)) });
+  });
+  batch.commit().catch((e) => mostraAvviso("Errore: " + e.message));
+  categorie = nuovaLista;
+  if (filtroCat === vecchia) filtroCat = nuova;
+  renderFiltri();
+  apriImpostazioni();
+}
+function eliminaCategoria(i) {
+  const c = categorie[i];
+  if (c == null) return;
+  const quante = ricette.filter((r) => (r.categorie || []).includes(c)).length;
+  const domanda = quante
+    ? 'Eliminare la categoria "' + c + '"?\nVerrà tolta da ' + quante + " ricett" + (quante === 1 ? "a" : "e") + " (le ricette restano)."
+    : 'Eliminare la categoria "' + c + '"?';
+  if (!confirm(domanda)) return;
+  const nuovaLista = categorie.filter((x) => x !== c);
+  const batch = writeBatch(db);
+  batch.set(rifImp(), { categorie: nuovaLista }, { merge: true });
+  ricette.filter((r) => (r.categorie || []).includes(c)).forEach((r) => {
+    batch.update(rifRicetta(r.id), { categorie: r.categorie.filter((x) => x !== c) });
+  });
+  batch.commit().catch((e) => mostraAvviso("Errore: " + e.message));
+  categorie = nuovaLista;
+  if (filtroCat === c) filtroCat = null;
+  renderFiltri();
+  renderLista();
+  apriImpostazioni();
+}
+function esporta() {
+  const dati = {
+    app: "Le mie Ricette",
+    versione: VERSIONE,
+    esportato: new Date().toISOString(),
+    categorie,
+    ricette: ricette.map((r) => ({ ...r, creato: tsISO(r.creato), aggiornato: tsISO(r.aggiornato) }))
+  };
+  const blob = new Blob([JSON.stringify(dati, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ricette-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  mostraAvviso("File di backup scaricato ✓");
+}
+
+/* ===== CONDIVISIONE DA ALTRE APP ===== */
+function leggiCondivisione() {
+  try {
+    const p = new URLSearchParams(location.search);
+    const parti = [p.get("title"), p.get("text"), p.get("url")].filter(Boolean);
+    if (!parti.length) return;
+    const testo = parti.join("\n");
+    const m = testo.match(/https?:\/\/[^\s]+/i);
+    sessionStorage.setItem("condiviso", JSON.stringify({ link: m ? m[0] : "", testo }));
+    history.replaceState(null, "", location.pathname);
+  } catch (e) {}
+}
+function usaCondivisione() {
+  let d = null;
+  try {
+    d = JSON.parse(sessionStorage.getItem("condiviso") || "null");
+    sessionStorage.removeItem("condiviso");
+  } catch (e) {}
+  if (!d) return;
+  const resto = d.link ? d.testo.split(d.link).join("").trim() : d.testo.trim();
+  apriForm(null, { link: d.link, note: resto });
+}
+leggiCondivisione();
+
+/* ===== CLIC ===== */
+document.addEventListener("click", (e) => {
+  const chipSel = e.target.closest(".chip.sel");
+  if (chipSel) { chipSel.classList.toggle("attiva"); return; }
+  const el = e.target.closest("[data-az]");
+  if (!el) return;
+  const az = el.dataset.az;
+  if (az === "apri") apriDettaglio(el.dataset.id);
+  else if (az === "chiudi") chiudiFoglio();
+  else if (az === "nuova") apriForm(null, null);
+  else if (az === "modifica") apriForm(el.dataset.id);
+  else if (az === "impostazioni") apriImpostazioni();
+  else if (az === "filtro") { filtroCat = el.dataset.cat || null; renderFiltri(); renderLista(); }
+  else if (az === "elimina") {
+    if (confirm("Eliminare definitivamente questa ricetta?")) {
+      deleteDoc(rifRicetta(el.dataset.id)).catch((err) => mostraAvviso("Errore: " + err.message));
+      chiudiFoglio();
+      mostraAvviso("Ricetta eliminata");
+    }
+  }
+  else if (az === "agg-cat-form") {
+    const inp = $("nuova-cat-form");
+    const nome = inp.value.trim();
+    if (aggiungiCategoria(nome)) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip sel attiva";
+      b.dataset.cat = nome;
+      b.textContent = nome;
+      $("scelta-cat").appendChild(b);
+      inp.value = "";
+    }
+  }
+  else if (az === "agg-cat-imp") {
+    if (aggiungiCategoria($("nuova-cat-imp").value)) apriImpostazioni();
+  }
+  else if (az === "rinomina-cat") rinominaCategoria(Number(el.dataset.i));
+  else if (az === "elimina-cat") eliminaCategoria(Number(el.dataset.i));
+  else if (az === "esporta") esporta();
+  else if (az === "esci") { if (confirm("Vuoi uscire dall'account?")) { nascondiFoglio(); signOut(auth); } }
+});
+
+/* ===== APP INSTALLABILE ===== */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+}
+</script>
+</body>
+</html>
