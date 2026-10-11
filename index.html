@@ -73,6 +73,15 @@ form label input,form label textarea{margin-top:6px;font-weight:400}
 .versione{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
 .avviso{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;z-index:50;max-width:90vw;text-align:center;font-size:15px}
 .caricamento{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--muted);z-index:40}
+.ai-box{margin-top:14px}
+.ai-box .btn.primario{width:100%;padding:12px}
+.ai-box details{margin-top:10px;font-size:15px}
+.ai-box summary{cursor:pointer;color:var(--accent);font-weight:600}
+.ai-box input[type=file]{margin-top:8px;padding:8px}
+.ai-box textarea{margin-top:8px}
+.ai-stato{margin:8px 0 0;font-size:14px;color:var(--muted);white-space:pre-line}
+.ai-stato.errore{color:var(--danger)}
+button:disabled{opacity:.6}
 </style>
 </head>
 <body>
@@ -114,7 +123,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRe
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ===== CONFIGURAZIONE ===== */
-const VERSIONE = "1.0.2";
+const VERSIONE = "1.1";
+const MODELLI_AI = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash-lite"];
 const firebaseConfig = {
   apiKey: "AIzaSyCzkJMenMIFO2ksb5ZZ59Yn9JVALXi3Ujs",
   authDomain: "ricette-app-25871.firebaseapp.com",
@@ -138,6 +148,8 @@ let testoRicerca = "";
 let foglioTipo = null;
 let stopRicette = null;
 let stopImp = null;
+let stopPriv = null;
+let chiaveAI = "";
 let primoCaricamento = true;
 
 const $ = (id) => document.getElementById(id);
@@ -181,6 +193,7 @@ function nascondiCaricamento() { $("caricamento").classList.add("hidden"); }
 const rifRicette = () => collection(db, "utenti", utente.uid, "ricette");
 const rifRicetta = (id) => doc(db, "utenti", utente.uid, "ricette", id);
 const rifImp = () => doc(db, "utenti", utente.uid, "impostazioni", "generale");
+const rifPriv = () => doc(db, "utenti", utente.uid, "impostazioni", "privato");
 
 /* ===== LOGIN ===== */
 function erroreLogin(e) {
@@ -221,6 +234,8 @@ onAuthStateChanged(auth, (u) => {
     utente = null;
     if (stopRicette) stopRicette();
     if (stopImp) stopImp();
+    if (stopPriv) stopPriv();
+    chiaveAI = "";
     ricette = [];
     $("schermo-app").classList.add("hidden");
     $("schermo-login").classList.remove("hidden");
@@ -249,6 +264,9 @@ function avviaDati() {
     primoCaricamento = false;
     renderFiltri();
     if (foglioTipo === "impostazioni") apriImpostazioni();
+  }, () => {});
+  stopPriv = onSnapshot(rifPriv(), (s) => {
+    chiaveAI = (s.exists() && s.data().geminiKey) ? String(s.data().geminiKey) : "";
   }, () => {});
 }
 function salvaCategorie(nuove) {
@@ -355,6 +373,11 @@ function apriForm(id, precompila) {
   const html = '<div class="barra"><button class="btn testo" data-az="chiudi">✕ Annulla</button><strong>' + (id ? "Modifica ricetta" : "Nuova ricetta") + "</strong><span style=\"width:60px\"></span></div>" +
     '<form id="form-ricetta" data-id="' + esc(id || "") + '" novalidate>' +
     '<label>Link (Instagram, Facebook, YouTube, sito…)<input name="link" type="url" inputmode="url" placeholder="https://…" value="' + esc(r.link || "") + '"></label>' +
+    '<div class="ai-box"><button type="button" class="btn primario" data-az="ai">✨ Compila con AI</button>' +
+    '<details id="ai-extra"><summary>Instagram o Facebook? Aggiungi uno screenshot o il testo</summary>' +
+    '<input type="file" id="ai-foto" accept="image/*" multiple>' +
+    '<textarea id="ai-testo" rows="3" placeholder="Incolla qui la descrizione del post (facoltativo)"></textarea></details>' +
+    '<p id="ai-stato" class="ai-stato"></p></div>' +
     '<label>Nome della ricetta *<input name="nome" value="' + esc(r.nome || "") + '"></label>' +
     '<div class="campo">Categorie <small>(puoi sceglierne più di una)</small>' +
     '<div class="chips" id="scelta-cat">' + categorie.map((c) =>
@@ -406,6 +429,11 @@ function apriImpostazioni() {
       '<button class="btn piccolo" data-az="rinomina-cat" data-i="' + i + '">Rinomina</button>' +
       '<button class="btn piccolo pericolo" data-az="elimina-cat" data-i="' + i + '">Elimina</button></span></li>').join("") +
     '</ul><div class="riga"><input id="nuova-cat-imp" placeholder="Nuova categoria…"><button class="btn" data-az="agg-cat-imp">Aggiungi</button></div></section>' +
+    '<section class="box"><h3>✨ AI – compilazione automatica</h3>' +
+    '<p>Incolla la chiave gratuita presa da aistudio.google.com. Resta salvata solo nel tuo account, non nel codice.</p>' +
+    '<div class="riga"><input id="chiave-ai" type="password" autocomplete="off" placeholder="AIza…" value="' + esc(chiaveAI) + '">' +
+    '<button class="btn" data-az="salva-chiave">Salva</button></div>' +
+    '<p style="margin:8px 0 0">' + (chiaveAI ? "✓ Chiave salvata" : "Nessuna chiave salvata") + "</p></section>" +
     '<section class="box"><h3>Backup</h3><p>Scarica tutte le ricette in un file, da conservare o da trasferire in un\'altra app.</p>' +
     '<button class="btn" data-az="esporta">⬇ Esporta tutto</button></section>' +
     '<section class="box"><h3>Account</h3><p>' + esc((utente && utente.email) || "") + '</p><button class="btn" data-az="esci">Esci</button></section>' +
@@ -476,6 +504,142 @@ function esporta() {
   mostraAvviso("File di backup scaricato ✓");
 }
 
+/* ===== AI (Gemini) ===== */
+function statoAI(msg, errore) {
+  const p = $("ai-stato");
+  if (!p) return;
+  p.textContent = msg || "";
+  p.classList.toggle("errore", !!errore);
+}
+function immagineInBase64(file) {
+  return new Promise((ok, ko) => {
+    const lettore = new FileReader();
+    lettore.onerror = () => ko(new Error("Impossibile leggere l'immagine"));
+    lettore.onload = () => {
+      const img = new Image();
+      img.onerror = () => ko(new Error("Immagine non valida"));
+      img.onload = () => {
+        const max = 1600;
+        const scala = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scala);
+        c.height = Math.round(img.height * scala);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        ok(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+      };
+      img.src = lettore.result;
+    };
+    lettore.readAsDataURL(file);
+  });
+}
+function testoRisposta(dati) {
+  try {
+    const parti = (((dati.candidates || [])[0] || {}).content || {}).parts || [];
+    return parti.filter((p) => p.text && !p.thought).map((p) => p.text).join("\n");
+  } catch (e) { return ""; }
+}
+function estraiJSON(t) {
+  const i = t.indexOf("{");
+  const j = t.lastIndexOf("}");
+  if (i === -1 || j <= i) return null;
+  try { return JSON.parse(t.slice(i, j + 1)); } catch (e) { return null; }
+}
+async function chiamaGemini(corpo) {
+  let ultimoErrore = null;
+  for (const modello of MODELLI_AI) {
+    let risp;
+    try {
+      risp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + modello + ":generateContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": chiaveAI },
+        body: JSON.stringify(corpo)
+      });
+    } catch (e) {
+      throw new Error("Nessuna connessione a internet, riprova.");
+    }
+    if (risp.ok) return risp.json();
+    let dettaglio = "";
+    try { dettaglio = ((await risp.json()).error || {}).message || ""; } catch (e) {}
+    if (/api key|api_key|permission/i.test(dettaglio) && (risp.status === 400 || risp.status === 403)) {
+      throw new Error("La chiave AI non è valida. Controllala in Impostazioni ⚙️.");
+    }
+    ultimoErrore = risp.status === 429
+      ? "Hai usato tutte le richieste gratuite per ora. Riprova tra qualche minuto."
+      : "Errore AI (" + risp.status + "): " + dettaglio;
+    // prova il modello successivo
+  }
+  throw new Error(ultimoErrore || "L'AI non ha risposto.");
+}
+async function compilaConAI() {
+  const form = $("form-ricetta");
+  if (!form) return;
+  if (!chiaveAI) { statoAI("Prima inserisci la chiave AI in Impostazioni ⚙️ (è gratuita, da aistudio.google.com).", true); return; }
+  const grezzo = (form.elements.link.value || "").trim();
+  const link = linkSicuro(grezzo);
+  const testoPost = ($("ai-testo").value || "").trim();
+  const foto = Array.from($("ai-foto").files || []).slice(0, 4);
+  if (grezzo && !link) { statoAI("Il link deve iniziare con https://", true); return; }
+  if (!link && !testoPost && !foto.length) { statoAI("Incolla un link, oppure aggiungi uno screenshot o il testo del post.", true); return; }
+  const f = fonte(link);
+  const social = f === "Instagram" || f === "Facebook" || f === "TikTok";
+  const bottone = form.querySelector('[data-az="ai"]');
+  bottone.disabled = true;
+  statoAI("⏳ Sto leggendo la ricetta… (può volerci fino a un minuto)");
+  try {
+    const istruzioni =
+      "Sei un assistente che estrae ricette di cucina. Leggi il contenuto fornito (la pagina al link, il video YouTube, gli screenshot o il testo del post) " +
+      "e rispondi SOLO con un oggetto JSON, senza altro testo, in questo formato: " +
+      '{"trovata": true, "ingredienti": ["quantità e ingrediente", "..."], "procedimento": ["passaggio 1", "..."], "note": "porzioni, tempi, temperature o consigli utili"}. ' +
+      "Scrivi tutto in italiano, traducendo se serve. Usa SOLO informazioni presenti davvero nel contenuto: non inventare nulla. " +
+      'Se non riesci a leggere il contenuto o non contiene una ricetta, rispondi esattamente {"trovata": false}.' +
+      (link ? " Link della ricetta: " + link : "");
+    const parti = [{ text: istruzioni }];
+    if (f === "YouTube") parti.push({ file_data: { file_uri: link } });
+    for (const file of foto) parti.push({ inline_data: { mime_type: "image/jpeg", data: await immagineInBase64(file) } });
+    if (testoPost) parti.push({ text: "Testo del post:\n" + testoPost });
+    const corpo = { contents: [{ role: "user", parts: parti }], generationConfig: { temperature: 0.2 } };
+    if (link && f !== "YouTube") corpo.tools = [{ url_context: {} }];
+    const dati = await chiamaGemini(corpo);
+    const r = estraiJSON(testoRisposta(dati));
+    const ingr = r && Array.isArray(r.ingredienti) ? r.ingredienti.map((x) => String(x).trim()).filter(Boolean) : [];
+    const proc = r && Array.isArray(r.procedimento) ? r.procedimento.map((x) => String(x).trim()).filter(Boolean) : [];
+    if (!r || r.trovata === false || (!ingr.length && !proc.length)) {
+      if (social && !foto.length && !testoPost) {
+        $("ai-extra").open = true;
+        statoAI(f + " non lascia leggere il post da fuori.\nFai uno screenshot della descrizione (o copia il testo), aggiungilo qui sopra e premi di nuovo ✨.", true);
+      } else {
+        statoAI("Non ho trovato una ricetta in questo contenuto. Puoi scriverla a mano o provare con uno screenshot.", true);
+      }
+      return;
+    }
+    const campoIngr = form.elements.ingredienti;
+    const campoProc = form.elements.procedimento;
+    if ((campoIngr.value.trim() || campoProc.value.trim()) && !confirm("Sostituire ingredienti e procedimento già scritti con quelli trovati dall'AI?")) {
+      statoAI("");
+      return;
+    }
+    campoIngr.value = ingr.join("\n");
+    campoProc.value = proc.join("\n");
+    const nota = r.note ? String(r.note).trim() : "";
+    if (nota) {
+      const campoNote = form.elements.note;
+      campoNote.value = campoNote.value.trim() ? campoNote.value.trim() + "\n" + nota : nota;
+    }
+    statoAI("✓ Fatto! Controlla, scegli nome e categorie, poi premi 💾 Salva.");
+  } catch (e) {
+    statoAI(e.message || "Qualcosa non ha funzionato, riprova.", true);
+  } finally {
+    bottone.disabled = false;
+  }
+}
+function salvaChiave() {
+  const v = ($("chiave-ai").value || "").trim();
+  setDoc(rifPriv(), { geminiKey: v }, { merge: true }).catch((e) => mostraAvviso("Errore: " + e.message));
+  chiaveAI = v;
+  mostraAvviso(v ? "Chiave AI salvata ✓" : "Chiave AI rimossa");
+  apriImpostazioni();
+}
+
 /* ===== CONDIVISIONE DA ALTRE APP ===== */
 function leggiCondivisione() {
   try {
@@ -497,6 +661,15 @@ function usaCondivisione() {
   if (!d) return;
   const resto = d.link ? d.testo.split(d.link).join("").trim() : d.testo.trim();
   apriForm(null, { link: d.link, note: resto });
+  if (d.link) {
+    // appena la chiave AI è pronta, prova a compilare da sola (aspetta al massimo 5 secondi)
+    let tentativi = 0;
+    const attesa = setInterval(() => {
+      tentativi++;
+      if (chiaveAI && $("form-ricetta")) { clearInterval(attesa); compilaConAI(); }
+      else if (tentativi > 10) clearInterval(attesa);
+    }, 500);
+  }
 }
 leggiCondivisione();
 
@@ -539,6 +712,8 @@ document.addEventListener("click", (e) => {
   else if (az === "rinomina-cat") rinominaCategoria(Number(el.dataset.i));
   else if (az === "elimina-cat") eliminaCategoria(Number(el.dataset.i));
   else if (az === "esporta") esporta();
+  else if (az === "ai") compilaConAI();
+  else if (az === "salva-chiave") salvaChiave();
   else if (az === "esci") { if (confirm("Vuoi uscire dall'account?")) { nascondiFoglio(); signOut(auth); } }
 });
 
