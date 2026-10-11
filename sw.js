@@ -1,5 +1,5 @@
-// Le mie Ricette - service worker - versione 1.1
-const CACHE = "ricette-v1.1";
+// Le mie Ricette - service worker - versione 1.1.1
+const CACHE = "ricette-v1.1.1";
 const FILE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {

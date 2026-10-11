@@ -82,6 +82,7 @@ form label input,form label textarea{margin-top:6px;font-weight:400}
 .ai-stato{margin:8px 0 0;font-size:14px;color:var(--muted);white-space:pre-line}
 .ai-stato.errore{color:var(--danger)}
 button:disabled{opacity:.6}
+.nascosto{-webkit-text-security:disc}
 </style>
 </head>
 <body>
@@ -123,7 +124,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRe
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ===== CONFIGURAZIONE ===== */
-const VERSIONE = "1.1";
+const VERSIONE = "1.1.1";
 const MODELLI_AI = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash-lite"];
 const firebaseConfig = {
   apiKey: "AIzaSyCzkJMenMIFO2ksb5ZZ59Yn9JVALXi3Ujs",
@@ -431,7 +432,7 @@ function apriImpostazioni() {
     '</ul><div class="riga"><input id="nuova-cat-imp" placeholder="Nuova categoria…"><button class="btn" data-az="agg-cat-imp">Aggiungi</button></div></section>' +
     '<section class="box"><h3>✨ AI – compilazione automatica</h3>' +
     '<p>Incolla la chiave gratuita presa da aistudio.google.com. Resta salvata solo nel tuo account, non nel codice.</p>' +
-    '<div class="riga"><input id="chiave-ai" type="password" autocomplete="off" placeholder="AIza…" value="' + esc(chiaveAI) + '">' +
+    '<div class="riga"><input id="chiave-ai" type="text" class="nascosto" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Incolla qui la chiave" value="' + esc(chiaveAI) + '">' +
     '<button class="btn" data-az="salva-chiave">Salva</button></div>' +
     '<p style="margin:8px 0 0">' + (chiaveAI ? "✓ Chiave salvata" : "Nessuna chiave salvata") + "</p></section>" +
     '<section class="box"><h3>Backup</h3><p>Scarica tutte le ricette in un file, da conservare o da trasferire in un\'altra app.</p>' +
