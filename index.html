@@ -124,7 +124,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRe
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ===== CONFIGURAZIONE ===== */
-const VERSIONE = "1.1.1";
+const VERSIONE = "1.1.2";
 const MODELLI_AI = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash-lite"];
 const firebaseConfig = {
   apiKey: "AIzaSyCzkJMenMIFO2ksb5ZZ59Yn9JVALXi3Ujs",
@@ -351,7 +351,7 @@ function apriDettaglio(id) {
     '<button class="btn testo" data-az="modifica" data-id="' + esc(r.id) + '">✏️ Modifica</button></div>' +
     '<h2 class="titolo-dett">' + esc(r.nome) + "</h2>" +
     '<div class="chips">' + (r.categorie || []).map((c) => '<span class="chip">' + esc(c) + "</span>").join("") + "</div>";
-  if (link) html += '<a class="btn primario grande" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(testoBottone) + "</a>";
+  if (link) html += '<button class="btn primario grande" data-az="apri-url" data-url="' + esc(link) + '">' + esc(testoBottone) + "</button>";
   if (ingr.length) {
     html += "<h4>Ingredienti</h4><ul class=\"ingr\">" + ingr.map((i) => '<li><label><input type="checkbox"><span>' + esc(i) + "</span></label></li>").join("") + "</ul>";
   }
@@ -373,7 +373,9 @@ function apriForm(id, precompila) {
   const sel = new Set(r.categorie || []);
   const html = '<div class="barra"><button class="btn testo" data-az="chiudi">✕ Annulla</button><strong>' + (id ? "Modifica ricetta" : "Nuova ricetta") + "</strong><span style=\"width:60px\"></span></div>" +
     '<form id="form-ricetta" data-id="' + esc(id || "") + '" novalidate>' +
-    '<label>Link (Instagram, Facebook, YouTube, sito…)<input name="link" type="url" inputmode="url" placeholder="https://…" value="' + esc(r.link || "") + '"></label>' +
+    '<label>Link (Instagram, Facebook, YouTube, sito…)</label>' +
+    '<div class="riga"><input name="link" type="url" inputmode="url" placeholder="https://…" value="' + esc(r.link || "") + '">' +
+    '<button type="button" class="btn" data-az="apri-link">▶ Apri</button></div>' +
     '<div class="ai-box"><button type="button" class="btn primario" data-az="ai">✨ Compila con AI</button>' +
     '<details id="ai-extra"><summary>Instagram o Facebook? Aggiungi uno screenshot o il testo</summary>' +
     '<input type="file" id="ai-foto" accept="image/*" multiple>' +
@@ -393,6 +395,7 @@ function apriForm(id, precompila) {
   apriFoglio("form", html);
 }
 function salvaRicetta(form) {
+  pulisciLink(form);
   const fd = new FormData(form);
   const nome = (fd.get("nome") || "").trim();
   if (!nome) { mostraAvviso("Scrivi il nome della ricetta"); return; }
@@ -575,31 +578,42 @@ async function compilaConAI() {
   const form = $("form-ricetta");
   if (!form) return;
   if (!chiaveAI) { statoAI("Prima inserisci la chiave AI in Impostazioni ⚙️ (è gratuita, da aistudio.google.com).", true); return; }
+  pulisciLink(form);
   const grezzo = (form.elements.link.value || "").trim();
   const link = linkSicuro(grezzo);
-  const testoPost = ($("ai-testo").value || "").trim();
+  // testo incollato: dal riquadro AI e, se c'è, anche dalle Note
+  const testoPost = [($("ai-testo").value || "").trim(), (form.elements.note.value || "").trim()].filter(Boolean).join("\n\n");
   const foto = Array.from($("ai-foto").files || []).slice(0, 4);
   if (grezzo && !link) { statoAI("Il link deve iniziare con https://", true); return; }
   if (!link && !testoPost && !foto.length) { statoAI("Incolla un link, oppure aggiungi uno screenshot o il testo del post.", true); return; }
   const f = fonte(link);
   const social = f === "Instagram" || f === "Facebook" || f === "TikTok";
+  // Instagram/Facebook/TikTok: dal solo link non si legge nulla, serve testo o screenshot
+  if (social && !testoPost && !foto.length) {
+    $("ai-extra").open = true;
+    statoAI(f + " non lascia leggere il post da fuori.\nCopia la descrizione del post (anche in spagnolo o inglese) e incollala nel riquadro qui sopra, oppure aggiungi uno screenshot, poi premi di nuovo ✨.", true);
+    return;
+  }
   const bottone = form.querySelector('[data-az="ai"]');
   bottone.disabled = true;
   statoAI("⏳ Sto leggendo la ricetta… (può volerci fino a un minuto)");
   try {
+    const usaPagina = link && !social && f !== "YouTube";
     const istruzioni =
-      "Sei un assistente che estrae ricette di cucina. Leggi il contenuto fornito (la pagina al link, il video YouTube, gli screenshot o il testo del post) " +
-      "e rispondi SOLO con un oggetto JSON, senza altro testo, in questo formato: " +
+      "Sei un assistente che estrae ricette di cucina. Il materiale può essere: la pagina web al link, un video YouTube, degli screenshot, oppure il testo copiato da un post social. " +
+      "Usa TUTTO il materiale disponibile: se c'è testo o uno screenshot, usalo anche se il link non è leggibile. Il testo può essere in qualsiasi lingua (spagnolo, inglese, ecc.). " +
+      "Rispondi SOLO con un oggetto JSON, senza altro testo, in questo formato: " +
       '{"trovata": true, "ingredienti": ["quantità e ingrediente", "..."], "procedimento": ["passaggio 1", "..."], "note": "porzioni, tempi, temperature o consigli utili"}. ' +
-      "Scrivi tutto in italiano, traducendo se serve. Usa SOLO informazioni presenti davvero nel contenuto: non inventare nulla. " +
-      'Se non riesci a leggere il contenuto o non contiene una ricetta, rispondi esattamente {"trovata": false}.' +
-      (link ? " Link della ricetta: " + link : "");
+      "Scrivi TUTTO in italiano, traducendo ingredienti, procedimento e note. Ignora hashtag, emoji, inviti a seguire o commentare. " +
+      "Usa solo informazioni presenti nel materiale: non inventare quantità o passaggi. " +
+      'Rispondi {"trovata": false} solo se nel materiale non c\'è nessuna ricetta.' +
+      (usaPagina ? " Pagina della ricetta: " + link : "");
     const parti = [{ text: istruzioni }];
     if (f === "YouTube") parti.push({ file_data: { file_uri: link } });
     for (const file of foto) parti.push({ inline_data: { mime_type: "image/jpeg", data: await immagineInBase64(file) } });
-    if (testoPost) parti.push({ text: "Testo del post:\n" + testoPost });
+    if (testoPost) parti.push({ text: "Testo copiato dal post:\n" + testoPost });
     const corpo = { contents: [{ role: "user", parts: parti }], generationConfig: { temperature: 0.2 } };
-    if (link && f !== "YouTube") corpo.tools = [{ url_context: {} }];
+    if (usaPagina) corpo.tools = [{ url_context: {} }];
     const dati = await chiamaGemini(corpo);
     const r = estraiJSON(testoRisposta(dati));
     const ingr = r && Array.isArray(r.ingredienti) ? r.ingredienti.map((x) => String(x).trim()).filter(Boolean) : [];
@@ -632,6 +646,28 @@ async function compilaConAI() {
   } finally {
     bottone.disabled = false;
   }
+}
+// se nel campo link c'è anche del testo ("Guarda questo reel https://..."), tiene solo l'indirizzo
+function pulisciLink(form) {
+  const campo = form && form.elements.link;
+  if (!campo) return;
+  const v = (campo.value || "").trim();
+  const m = v.match(/https?:\/\/[^\s"'<>]+/i);
+  if (m && m[0] !== v) campo.value = m[0];
+}
+function apriIndirizzo(u) {
+  const link = linkSicuro(u);
+  if (!link) return;
+  const w = window.open(link, "_blank", "noopener");
+  if (!w) location.href = link;
+}
+function apriLinkDalForm() {
+  const form = $("form-ricetta");
+  if (!form) return;
+  pulisciLink(form);
+  const link = linkSicuro(form.elements.link.value);
+  if (!link) { mostraAvviso("Prima incolla un link valido (https://…)"); return; }
+  apriIndirizzo(link);
 }
 function salvaChiave() {
   const v = ($("chiave-ai").value || "").trim();
@@ -714,6 +750,8 @@ document.addEventListener("click", (e) => {
   else if (az === "elimina-cat") eliminaCategoria(Number(el.dataset.i));
   else if (az === "esporta") esporta();
   else if (az === "ai") compilaConAI();
+  else if (az === "apri-link") apriLinkDalForm();
+  else if (az === "apri-url") apriIndirizzo(el.dataset.url);
   else if (az === "salva-chiave") salvaChiave();
   else if (az === "esci") { if (confirm("Vuoi uscire dall'account?")) { nascondiFoglio(); signOut(auth); } }
 });
